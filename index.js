@@ -1,16 +1,21 @@
+import { getAllRequests, submitVideoRequest, submitVote } from './service.js'
+
 const reqItemTemplate = (item) => `<div class="card mb-3">
         <div class="card-body d-flex justify-content-between flex-row">
           <div class="d-flex flex-column">
             <h3>${item.topic_title}</h3>
             <p class="text-muted mb-2">${item.topic_details}</p>
             <p class="mb-0 text-muted">
-              <strong>Expected results:</strong> ${item.expected_result}
+              ${
+                item.expected_result &&
+                `<strong>Expected results:</strong> ${item.expected_result}`
+              }
             </p>
           </div>
           <div class="d-flex flex-column text-center">
-            <a class="btn btn-link">🔺</a>
-            <h3>0</h3>
-            <a class="btn btn-link">🔻</a>
+            <button id="vote-ups-${item._id}" class="btn votebtn">🔺</button>
+            <h3 id="vote-score">${item.votes.ups - item.votes.downs}</h3>
+            <button id="vote-downs-${item._id}" class="btn votebtn">🔻</button>
           </div>
         </div>
         <div class="card-footer d-flex flex-row justify-content-between">
@@ -35,33 +40,41 @@ const reqItemTemplate = (item) => `<div class="card mb-3">
 document.addEventListener('DOMContentLoaded', async () => {
   const videoRequests = await getAllRequests()
 
-  listAllRequests(videoRequests)
+  videoRequests.forEach((item) => appendItemToList(item))
 
   const videoForm = document.querySelector('#videoRequestForm')
 
-  videoForm.addEventListener('submit', (e) => {
+  videoForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     const fd = new FormData(videoForm)
-    submitVideoRequest(fd)
+    const data = await submitVideoRequest(fd)
+    appendItemToList(data)
+  })
+
+  const voteBtns = document.querySelectorAll('.votebtn')
+
+  voteBtns.forEach((btn) => {
+    btn.addEventListener('click', handleVoteClick)
   })
 })
 
-async function getAllRequests() {
-  const res = await fetch('http://localhost:7777/video-request')
-  return await res.json()
-}
-
-function listAllRequests(videoRequests) {
+function appendItemToList(item) {
   const videosListElement = document.querySelector('#listOfRequests')
-
-  videoRequests.forEach((item) => {
-    videosListElement.insertAdjacentHTML('beforeend', reqItemTemplate(item))
-  })
+  const container = document.createElement('div')
+  container.innerHTML = reqItemTemplate(item)
+  videosListElement.prepend(container)
 }
 
-async function submitVideoRequest(payload) {
-  await fetch('http://localhost:7777/video-request', {
-    method: 'POST',
-    body: payload
-  })
+async function handleVoteClick(e) {
+  const voteScore = document.querySelector('#vote-score')
+
+  const clickedButton = e.target
+
+  const clickedButtonId = clickedButton.id
+
+  const [_, voteType, itemId] = clickedButtonId.split('-')
+
+  const data = await submitVote(itemId, voteType)
+
+  voteScore.innerHTML = data.ups - data.downs
 }
