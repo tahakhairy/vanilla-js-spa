@@ -14,7 +14,7 @@ const reqItemTemplate = (item) => `<div class="card mb-3">
           </div>
           <div class="d-flex flex-column text-center">
             <button id="vote-ups-${item._id}" class="btn votebtn">🔺</button>
-            <h3 id="vote-score-${item.id}">${item.votes.ups - item.votes.downs}</h3>
+            <h3 id="vote-score-${item._id}">${item.votes.ups - item.votes.downs}</h3>
             <button id="vote-downs-${item._id}" class="btn votebtn">🔻</button>
           </div>
         </div>
@@ -66,7 +66,7 @@ function appendItemToList(item) {
 }
 
 async function handleVoteClick(e) {
-  const voteScore = document.querySelector('#vote-score')
+  
 
   const clickedButton = e.target
 
@@ -75,6 +75,10 @@ async function handleVoteClick(e) {
   const [_, voteType, itemId] = clickedButtonId.split('-')
 
   const data = await submitVote(itemId, voteType)
+
+  const voteScore = document.querySelector(`#vote-score-${itemId}`)
+
+  console.log(voteScore)
 
   voteScore.innerHTML = data.ups - data.downs
 }
