@@ -1,5 +1,7 @@
-export async function getAllRequests() {
-  const res = await fetch('http://localhost:7777/video-request')
+export async function getAllRequests(sortBy = 'newFirst') {
+  const res = await fetch(
+    `http://localhost:7777/video-request?sortBy=${sortBy}`
+  )
   return await res.json()
 }
 

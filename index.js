@@ -1,5 +1,36 @@
 import { getAllRequests, submitVideoRequest, submitVote } from './service.js'
 
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadAllRequests()
+
+  const sortingElemnts = document.querySelectorAll('[for*=sort_by_]')
+
+  sortingElemnts.forEach((element) => {
+    element.addEventListener('click', async function (e) {
+      e.preventDefault()
+
+      const sortValue = this.querySelector('input').value
+      await loadAllRequests({ sortBy: sortValue })
+
+      this.classList.add('active')
+      if (sortValue === 'topFirst') {
+        document.querySelector('[for=sort_by_new]').classList.remove('active')
+      } else {
+        document.querySelector('[for=sort_by_top]').classList.remove('active')
+      }
+    })
+  })
+
+  const videoForm = document.querySelector('#videoRequestForm')
+
+  videoForm.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const fd = new FormData(videoForm)
+    const data = await submitVideoRequest(fd)
+    appendToList(data, true)
+  })
+})
+
 const reqItemTemplate = (item) => `<div class="card mb-3">
         <div class="card-body d-flex justify-content-between flex-row">
           <div class="d-flex flex-column">
@@ -14,7 +45,8 @@ const reqItemTemplate = (item) => `<div class="card mb-3">
           </div>
           <div class="d-flex flex-column text-center">
             <button id="vote-ups-${item._id}" class="btn votebtn">🔺</button>
-            <h3 id="vote-score-${item._id}">${item.votes.ups - item.votes.downs}</h3>
+            <h3 id="vote-score-${item._id}">${item.votes.ups - item.votes.downs}
+            </h3>
             <button id="vote-downs-${item._id}" class="btn votebtn">🔻</button>
           </div>
         </div>
@@ -37,48 +69,39 @@ const reqItemTemplate = (item) => `<div class="card mb-3">
       </div>
 `
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const videoRequests = await getAllRequests()
+function appendToList(item, isPrepend = false) {
+  const videosListElement = document.querySelector('#listOfRequests')
+  const container = document.createElement('div')
+  container.innerHTML = reqItemTemplate(item)
 
-  videoRequests.forEach((item) => appendItemToList(item))
-
-  const videoForm = document.querySelector('#videoRequestForm')
-
-  videoForm.addEventListener('submit', async (e) => {
-    e.preventDefault()
-    const fd = new FormData(videoForm)
-    const data = await submitVideoRequest(fd)
-    appendItemToList(data)
-  })
+  if (isPrepend) {
+    videosListElement.prepend(container)
+  } else {
+    videosListElement.appendChild(container)
+  }
 
   const voteBtns = document.querySelectorAll('.votebtn')
 
   voteBtns.forEach((btn) => {
     btn.addEventListener('click', handleVoteClick)
   })
-})
+}
 
-function appendItemToList(item) {
+async function loadAllRequests(filters = {}) {
   const videosListElement = document.querySelector('#listOfRequests')
-  const container = document.createElement('div')
-  container.innerHTML = reqItemTemplate(item)
-  videosListElement.prepend(container)
+  const videoRequests = await getAllRequests(filters.sortBy)
+  videosListElement.innerHTML = ''
+  videoRequests.forEach((item) => appendToList(item))
 }
 
 async function handleVoteClick(e) {
-  
-
-  const clickedButton = e.target
-
-  const clickedButtonId = clickedButton.id
+  const clickedButtonId = e.target.id
 
   const [_, voteType, itemId] = clickedButtonId.split('-')
 
   const data = await submitVote(itemId, voteType)
 
   const voteScore = document.querySelector(`#vote-score-${itemId}`)
-
-  console.log(voteScore)
 
   voteScore.innerHTML = data.ups - data.downs
 }
