@@ -28,11 +28,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const videoForm = document.querySelector('#videoRequestForm')
 
-  videoForm.addEventListener('submit', async (e) => {
+  videoForm.addEventListener('submit', async function (e) {
     e.preventDefault()
-    const fd = new FormData(videoForm)
+    const fd = new FormData(this)
+
+    if (!isValidForm(fd)) return
+
     const data = await submitVideoRequest(fd)
     appendToList(data, true)
+
+    this.reset()
   })
 
   const searchInput = document.getElementById('search-box')
@@ -120,4 +125,35 @@ async function handleVoteClick(e) {
   const voteScore = document.querySelector(`#vote-score-${itemId}`)
 
   voteScore.innerHTML = data.ups - data.downs
+}
+
+function isValidForm(fd) {
+  const invalidFields = []
+  const emailPattern = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/
+  const invalidEmailError = document.querySelector('#invalid-email-error')
+  for (const [key, value] of fd.entries()) {
+    const field = document.querySelector(`[name=${key}]`)
+    if (field.required) {
+      if (!value) {
+        field.classList.add('is-invalid')
+        invalidFields.push(field)
+      }
+      if (value && !emailPattern.test(value) && key === 'author_email') {
+        invalidEmailError.style.display = 'block'
+      }
+    }
+  }
+
+  if (invalidFields.length) {
+    invalidFields.forEach((field) => {
+      field.addEventListener('input', function (e) {
+        this.classList.remove('is-invalid')
+        if (emailPattern.test(e.target.value)) {
+          invalidEmailError.style.display = 'none'
+        }
+      })
+    })
+    return false
+  }
+  return true
 }
