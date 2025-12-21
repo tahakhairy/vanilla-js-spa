@@ -1,4 +1,9 @@
 import { getAllRequests, submitVideoRequest, submitVote } from './service.js'
+import { debounce } from './utils.js'
+const filters = {
+  sortBy: '',
+  search: ''
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadAllRequests()
@@ -9,11 +14,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     element.addEventListener('click', async function (e) {
       e.preventDefault()
 
-      const sortValue = this.querySelector('input').value
-      await loadAllRequests({ sortBy: sortValue })
+      filters.sortBy = this.querySelector('input').value
+      await loadAllRequests(filters)
 
       this.classList.add('active')
-      if (sortValue === 'topFirst') {
+      if (filters.sortBy === 'topFirst') {
         document.querySelector('[for=sort_by_new]').classList.remove('active')
       } else {
         document.querySelector('[for=sort_by_top]').classList.remove('active')
@@ -29,6 +34,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await submitVideoRequest(fd)
     appendToList(data, true)
   })
+
+  const searchInput = document.getElementById('search-box')
+
+  searchInput.addEventListener(
+    'input',
+    debounce(async function (e) {
+      filters.search = e.target.value
+
+      await loadAllRequests(filters)
+    }, 300)
+  )
 })
 
 const reqItemTemplate = (item) => `<div class="card mb-3">
@@ -89,7 +105,7 @@ function appendToList(item, isPrepend = false) {
 
 async function loadAllRequests(filters = {}) {
   const videosListElement = document.querySelector('#listOfRequests')
-  const videoRequests = await getAllRequests(filters.sortBy)
+  const videoRequests = await getAllRequests(filters)
   videosListElement.innerHTML = ''
   videoRequests.forEach((item) => appendToList(item))
 }
