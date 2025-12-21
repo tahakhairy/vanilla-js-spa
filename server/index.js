@@ -27,7 +27,16 @@ app.post('/video-request', upload.none(), async (req, res, next) => {
 })
 
 app.get('/video-request', async (req, res, next) => {
-  const data = await VideoRequestData.getAllVideoRequests()
+  const { sortBy } = req.query
+  let data = await VideoRequestData.getAllVideoRequests()
+  if (sortBy === 'topFirst') {
+    data = data.sort((prev, next) => {
+      return prev.votes.ups - prev.votes.downs >
+        next.votes.ups - next.votes.downs
+        ? -1
+        : 1
+    })
+  }
   res.send(data)
   next()
 })
